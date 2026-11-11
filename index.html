@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบตรวจสอบและบริหารการต่อภาษีรถยนต์ประจำปี</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font: Prompt -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #f8fafc;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+    <!-- Header Navigation -->
+    <header class="bg-gradient-to-r from-brand-700 via-brand-600 to-sky-600 text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white/10 p-2.5 rounded-xl backdrop-blur-sm">
+                    <i class="fa-solid fa-car-side text-2xl text-amber-300"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">ระบบตรวจสอบการต่อภาษีรถยนต์ประจำปี</h1>
+                    <p class="text-xs text-sky-100 font-light">ระบบติดตามสถานะภาษีรถยนต์ภายในหน่วยงาน</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="openModal()" class="bg-amber-400 hover:bg-amber-500 text-slate-900 font-semibold text-xs md:text-sm px-3.5 py-2 rounded-xl shadow-lg transition duration-200 flex items-center gap-2">
+                    <i class="fa-solid fa-plus text-sm"></i> <span>เพิ่มข้อมูลรถยนต์</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full space-y-6">
+
+        <!-- Status Summary Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <!-- Total -->
+            <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-500 mb-1">รถยนต์ทั้งหมด</p>
+                    <h3 class="text-2xl font-bold text-slate-800" id="stat-total">0</h3>
+                </div>
+                <div class="w-11 h-11 bg-slate-100 text-slate-600 rounded-xl flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-car"></i>
+                </div>
+            </div>
+            <!-- Expired (Red) -->
+            <div class="bg-white rounded-2xl p-4 border border-red-100 shadow-sm flex items-center justify-between relative overflow-hidden">
+                <div class="absolute top-0 left-0 bottom-0 w-1 bg-red-500"></div>
+                <div>
+                    <p class="text-xs font-medium text-red-600 mb-1">เกินกำหนด (ต้องต่อภาษี)</p>
+                    <h3 class="text-2xl font-bold text-red-600" id="stat-expired">0</h3>
+                </div>
+                <div class="w-11 h-11 bg-red-50 text-red-600 rounded-xl flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+            </div>
+            <!-- Warning (Orange/Yellow) -->
+            <div class="bg-white rounded-2xl p-4 border border-amber-100 shadow-sm flex items-center justify-between relative overflow-hidden">
+                <div class="absolute top-0 left-0 bottom-0 w-1 bg-amber-500"></div>
+                <div>
+                    <p class="text-xs font-medium text-amber-700 mb-1">ใกล้ครบกำหนด (ภายใน 1 เดือน)</p>
+                    <h3 class="text-2xl font-bold text-amber-600" id="stat-warning">0</h3>
+                </div>
+                <div class="w-11 h-11 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-clock"></i>
+                </div>
+            </div>
+            <!-- Normal (Green) -->
+            <div class="bg-white rounded-2xl p-4 border border-emerald-100 shadow-sm flex items-center justify-between relative overflow-hidden">
+                <div class="absolute top-0 left-0 bottom-0 w-1 bg-emerald-500"></div>
+                <div>
+                    <p class="text-xs font-medium text-emerald-700 mb-1">ปกติ / ดำเนินการแล้ว</p>
+                    <h3 class="text-2xl font-bold text-emerald-600" id="stat-normal">0</h3>
+                </div>
+                <div class="w-11 h-11 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Department Summary Section (สรุปแยกตามหน่วยงานย่อย) -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-semibold text-slate-800 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-building-user text-brand-600"></i> สรุปรถต้องเร่งรัดติดตามแยกตามหน่วยงานย่อย <span class="text-xs font-normal text-slate-400">(คลิกที่การ์ดเพื่อกรองข้อมูล)</span>
+                </h3>
+                <span class="text-xs text-slate-400 font-normal">*นับเฉพาะรถเกินกำหนดและใกล้ครบกำหนด</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="deptSummaryCards">
+                <!-- Content populated via JS -->
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3 md:space-y-0 md:flex md:items-center md:justify-between md:gap-4">
+            <div class="flex-grow relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+                <input type="text" id="searchInput" onkeyup="renderTable()" placeholder="ค้นหาป้ายทะเบียน..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:w-auto">
+                <!-- Filter Department -->
+                <div>
+                    <select id="filterDept" onchange="renderTable()" class="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+                        <option value="">-- ทุกหน่วยงานย่อย --</option>
+                        <option value="สำนักงานทางหลวงชนบทที่ 1">สำนักงานทางหลวงชนบทที่ 1</option>
+                        <option value="แขวงทางหลวงชนบทปทุมธานี">แขวงทางหลวงชนบทปทุมธานี</option>
+                        <option value="แขวงทางหลวงชนบทพระนครศรีอยุธยา">แขวงทางหลวงชนบทพระนครศรีอยุธยา</option>
+                        <option value="แขวงทางหลวงชนบทอ่างทอง">แขวงทางหลวงชนบทอ่างทอง</option>
+                        <option value="แขวงทางหลวงชนบทนนทบุรี">แขวงทางหลวงชนบทนนทบุรี</option>
+                        <option value="แขวงทางหลวงชนบทสมุทรปราการ">แขวงทางหลวงชนบทสมุทรปราการ</option>
+                    </select>
+                </div>
+                <!-- Filter Status -->
+                <div>
+                    <select id="filterStatus" onchange="renderTable()" class="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+                        <option value="">-- ทุกสถานะ --</option>
+                        <option value="EXPIRED">เกินกำหนด (สีแดง)</option>
+                        <option value="WARNING">ใกล้ครบกำหนด 1 เดือน (สีส้ม)</option>
+                        <option value="NORMAL">ปกติ / ดำเนินการแล้ว (สีเขียว)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table View -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center flex-wrap gap-2">
+                <h2 class="font-semibold text-slate-700 flex items-center gap-2">
+                    <i class="fa-solid fa-list text-brand-600"></i> รายการรถยนต์
+                </h2>
+                <span class="text-xs text-slate-500" id="record-count">แสดง 0 รายการ</span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-100/70 text-slate-600 font-medium text-xs uppercase tracking-wider">
+                        <tr>
+                            <th class="py-3.5 px-4">ป้ายทะเบียน</th>
+                            <th class="py-3.5 px-4">หน่วยงานย่อย</th>
+                            <th class="py-3.5 px-4">วันครบกำหนดต่อภาษี</th>
+                            <th class="py-3.5 px-4">ระยะเวลาคงเหลือ</th>
+                            <th class="py-3.5 px-4 text-center">สถานะ</th>
+                            <th class="py-3.5 px-4 text-center">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="carTableBody" class="divide-y divide-slate-100">
+                        <!-- Dynamic Content Generated via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden text-center py-12">
+                <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
+                    <i class="fa-solid fa-folder-open"></i>
+                </div>
+                <h4 class="text-slate-600 font-semibold">ไม่พบข้อมูลรถยนต์</h4>
+                <p class="text-xs text-slate-400 mt-1">ลองเปลี่ยนคำค้นหา หรือกดปุ่ม "เพิ่มข้อมูลรถยนต์"</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-12 py-4 text-center text-xs text-slate-500">
+        <p>© ระบบตรวจสอบการต่อภาษีรถยนต์ประจำปี - สำหรับการใช้งานภายในหน่วยงาน</p>
+    </footer>
+
+    <!-- Add/Edit Modal Window -->
+    <div id="carModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-all">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-brand-700 to-brand-600 text-white p-4 flex justify-between items-center">
+                <h3 class="font-bold flex items-center gap-2" id="modalTitle">
+                    <i class="fa-solid fa-car"></i> เพิ่มข้อมูลรถยนต์
+                </h3>
+                <button onclick="closeModal()" class="text-white/80 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Form -->
+            <form id="carForm" onsubmit="saveCar(event)" class="p-5 space-y-4">
+                <input type="hidden" id="carId">
+
+                <!-- 1. ป้ายทะเบียน -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">ป้ายทะเบียน <span class="text-red-500">*</span></label>
+                    <input type="text" id="licensePlate" required placeholder="เช่น นข 4012 ปทุมธานี" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+
+                <!-- 2. หน่วยงานย่อย -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">หน่วยงานย่อย <span class="text-red-500">*</span></label>
+                    <select id="department" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white">
+                        <option value="" disabled selected>-- เลือกหน่วยงานย่อย --</option>
+                        <option value="สำนักงานทางหลวงชนบทที่ 1">สำนักงานทางหลวงชนบทที่ 1</option>
+                        <option value="แขวงทางหลวงชนบทปทุมธานี">แขวงทางหลวงชนบทปทุมธานี</option>
+                        <option value="แขวงทางหลวงชนบทพระนครศรีอยุธยา">แขวงทางหลวงชนบทพระนครศรีอยุธยา</option>
+                        <option value="แขวงทางหลวงชนบทอ่างทอง">แขวงทางหลวงชนบทอ่างทอง</option>
+                        <option value="แขวงทางหลวงชนบทนนทบุรี">แขวงทางหลวงชนบทนนทบุรี</option>
+                        <option value="แขวงทางหลวงชนบทสมุทรปราการ">แขวงทางหลวงชนบทสมุทรปราการ</option>
+                    </select>
+                </div>
+
+                <!-- 3. วันครบกำหนดต่อภาษี -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">วันครบกำหนดต่อภาษีประจำปี <span class="text-red-500">*</span></label>
+                    <input type="date" id="dueDate" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+
+                <!-- Actions Buttons -->
+                <div class="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50">ยกเลิก</button>
+                    <button type="submit" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-medium shadow-md transition">บันทึกข้อมูล</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-800 text-white px-4 py-3 rounded-xl shadow-lg flex items-center space-x-3 text-sm z-50 transform translate-y-20 opacity-0 transition-all duration-300">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+        <span id="toastMessage">บันทึกข้อมูลสำเร็จ</span>
+    </div>
+
+    <!-- Application Logic Script -->
+    <script>
+        const STORAGE_KEY = 'car_tax_management_db_drr';
+        let cars = [];
+
+        // Sample Data based on agency vehicle records across all 6 departments
+        const sampleCars = [
+            { id: '1', licensePlate: 'กธ-5309 อยุธยา', department: 'แขวงทางหลวงชนบทพระนครศรีอยุธยา', dueDate: getRelativeDate(-12) },
+            { id: '2', licensePlate: 'กง-6889 อยุธยา', department: 'แขวงทางหลวงชนบทพระนครศรีอยุธยา', dueDate: getRelativeDate(18) },
+            { id: '3', licensePlate: '5กว-4378 กทม.', department: 'แขวงทางหลวงชนบทพระนครศรีอยุธยา', dueDate: getRelativeDate(25) },
+            { id: '4', licensePlate: 'นค-5129 อยุธยา', department: 'แขวงทางหลวงชนบทพระนครศรีอยุธยา', dueDate: getRelativeDate(140) },
+            { id: '5', licensePlate: '1ฒถ-2893 กทม.', department: 'แขวงทางหลวงชนบทพระนครศรีอยุธยา', dueDate: getRelativeDate(-5) },
+            { id: '6', licensePlate: 'นข 4012 ปทุมธานี', department: 'แขวงทางหลวงชนบทปทุมธานี', dueDate: getRelativeDate(-20) },
+            { id: '7', licensePlate: 'กข 9821 ปทุมธานี', department: 'แขวงทางหลวงชนบทปทุมธานี', dueDate: getRelativeDate(10) },
+            { id: '8', licensePlate: 'นข 1540 ปทุมธานี', department: 'แขวงทางหลวงชนบทปทุมธานี', dueDate: getRelativeDate(180) },
+            { id: '9', licensePlate: 'นข 3319 อ่างทอง', department: 'แขวงทางหลวงชนบทอ่างทอง', dueDate: getRelativeDate(-3) },
+            { id: '10', licensePlate: 'กข 7712 อ่างทอง', department: 'แขวงทางหลวงชนบทอ่างทอง', dueDate: getRelativeDate(15) },
+            { id: '11', licensePlate: 'นข 8840 นนทบุรี', department: 'แขวงทางหลวงชนบทนนทบุรี', dueDate: getRelativeDate(-15) },
+            { id: '12', licensePlate: '6กด-831 กทม.', department: 'แขวงทางหลวงชนบทนนทบุรี', dueDate: getRelativeDate(28) },
+            { id: '13', licensePlate: '4กต 8812 สมุทรปราการ', department: 'แขวงทางหลวงชนบทสมุทรปราการ', dueDate: getRelativeDate(210) },
+            { id: '14', licensePlate: '50-5559 กทม.', department: 'แขวงทางหลวงชนบทสมุทรปราการ', dueDate: getRelativeDate(8) },
+            { id: '15', licensePlate: 'ฮภ 1101 กรุงเทพฯ', department: 'สำนักงานทางหลวงชนบทที่ 1', dueDate: getRelativeDate(-8) },
+            { id: '16', licensePlate: 'ฮว-6738 กทม.', department: 'สำนักงานทางหลวงชนบทที่ 1', dueDate: getRelativeDate(22) }
+        ];
+
+        function getRelativeDate(daysOffset) {
+            const date = new Date();
+            date.setDate(date.getDate() + daysOffset);
+            return date.toISOString().split('T')[0];
+        }
+
+        window.onload = function() {
+            loadCars();
+            renderTable();
+        };
+
+        function loadCars() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            if (data) {
+                try {
+                    cars = JSON.parse(data);
+                } catch(e) {
+                    cars = [...sampleCars];
+                }
+            } else {
+                cars = [...sampleCars];
+                saveToLocalStorage();
+            }
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(cars));
+        }
+
+        // Calculate Status according to specified conditions
+        function getCarStatus(dueDateStr) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const due = new Date(dueDateStr);
+            due.setHours(0, 0, 0, 0);
+
+            const diffTime = due - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays < 0) {
+                // เกินกำหนด -> สีแดง
+                return {
+                    code: 'EXPIRED',
+                    label: 'เกินกำหนด (เลยกำหนดชำระ)',
+                    bgClass: 'bg-red-100 text-red-700 border-red-200',
+                    badgeDot: 'bg-red-500',
+                    daysText: `เกินกำหนด ${Math.abs(diffDays)} วัน`,
+                    daysColor: 'text-red-600 font-semibold',
+                    days: diffDays
+                };
+            } else if (diffDays <= 30) {
+                // ใกล้เข้าเช็คก่อน 1 เดือน -> สีส้ม
+                return {
+                    code: 'WARNING',
+                    label: 'ใกล้ครบกำหนด (ภายใน 1 เดือน)',
+                    bgClass: 'bg-amber-100 text-amber-800 border-amber-200',
+                    badgeDot: 'bg-amber-500 animate-pulse',
+                    daysText: `เหลืออีก ${diffDays} วัน`,
+                    daysColor: 'text-amber-600 font-semibold',
+                    days: diffDays
+                };
+            } else {
+                // ยังไม่ใกล้ / ดำเนินการแล้ว -> สีเขียว
+                return {
+                    code: 'NORMAL',
+                    label: 'ปกติ / ดำเนินการแล้ว',
+                    bgClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+                    badgeDot: 'bg-emerald-500',
+                    daysText: `เหลืออีก ${diffDays} วัน`,
+                    daysColor: 'text-slate-600',
+                    days: diffDays
+                };
+            }
+        }
+
+        function renderTable() {
+            const search = document.getElementById('searchInput').value.toLowerCase().trim();
+            const filterDept = document.getElementById('filterDept').value;
+            const filterStatus = document.getElementById('filterStatus').value;
+
+            const tbody = document.getElementById('carTableBody');
+            tbody.innerHTML = '';
+
+            let total = 0;
+            let countExpired = 0;
+            let countWarning = 0;
+            let countNormal = 0;
+            let filteredCount = 0;
+
+            // Department breakdown tracking
+            const deptStats = {
+                'สำนักงานทางหลวงชนบทที่ 1': { expired: 0, warning: 0 },
+                'แขวงทางหลวงชนบทปทุมธานี': { expired: 0, warning: 0 },
+                'แขวงทางหลวงชนบทพระนครศรีอยุธยา': { expired: 0, warning: 0 },
+                'แขวงทางหลวงชนบทอ่างทอง': { expired: 0, warning: 0 },
+                'แขวงทางหลวงชนบทนนทบุรี': { expired: 0, warning: 0 },
+                'แขวงทางหลวงชนบทสมุทรปราการ': { expired: 0, warning: 0 }
+            };
+
+            const sortedCars = [...cars].sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+
+            sortedCars.forEach(car => {
+                const statusInfo = getCarStatus(car.dueDate);
+
+                total++;
+                if (statusInfo.code === 'EXPIRED') {
+                    countExpired++;
+                    if (deptStats[car.department]) deptStats[car.department].expired++;
+                } else if (statusInfo.code === 'WARNING') {
+                    countWarning++;
+                    if (deptStats[car.department]) deptStats[car.department].warning++;
+                } else if (statusInfo.code === 'NORMAL') {
+                    countNormal++;
+                }
+
+                const matchSearch = car.licensePlate.toLowerCase().includes(search);
+                const matchDept = !filterDept || car.department === filterDept;
+                const matchStatus = !filterStatus || statusInfo.code === filterStatus;
+
+                if (matchSearch && matchDept && matchStatus) {
+                    filteredCount++;
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50/80 transition duration-150";
+                    
+                    const dateObj = new Date(car.dueDate);
+                    const formattedDate = dateObj.toLocaleDateString('th-TH', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+
+                    tr.innerHTML = `
+                        <td class="py-3.5 px-4 font-bold text-slate-800 whitespace-nowrap">
+                            ${escapeHtml(car.licensePlate)}
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-600">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 rounded-md text-xs font-medium text-slate-700">
+                                <i class="fa-solid fa-building-user text-slate-400"></i> ${escapeHtml(car.department)}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-700 whitespace-nowrap">
+                            <i class="fa-regular fa-calendar mr-1 text-slate-400"></i> ${formattedDate}
+                        </td>
+                        <td class="py-3.5 px-4 whitespace-nowrap ${statusInfo.daysColor}">
+                            ${statusInfo.daysText}
+                        </td>
+                        <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${statusInfo.bgClass}">
+                                <span class="w-2 h-2 rounded-full ${statusInfo.badgeDot}"></span>
+                                ${statusInfo.label}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                            <div class="flex items-center justify-center space-x-2">
+                                <button onclick="quickUpdateTax('${car.id}')" title="บันทึกต่อภาษีเรียบร้อยแล้ว (+1 ปี)" class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </button>
+                                <button onclick="editCar('${car.id}')" title="แก้ไขข้อมูล" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <button onclick="deleteCar('${car.id}')" title="ลบข้อมูล" class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
+
+            // Update Top Global Stats
+            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-expired').innerText = countExpired;
+            document.getElementById('stat-warning').innerText = countWarning;
+            document.getElementById('stat-normal').innerText = countNormal;
+
+            // Render Department Summary Cards
+            renderDeptSummary(deptStats);
+
+            document.getElementById('record-count').innerText = `แสดง ${filteredCount} จาก ${total} รายการ`;
+
+            const emptyState = document.getElementById('emptyState');
+            if (filteredCount === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
+        }
+
+        function renderDeptSummary(stats) {
+            const container = document.getElementById('deptSummaryCards');
+            container.innerHTML = '';
+
+            Object.keys(stats).forEach(deptName => {
+                const expiredCount = stats[deptName].expired;
+                const warningCount = stats[deptName].warning;
+
+                const card = document.createElement('div');
+                // Make the card clickable and interactive
+                card.className = "bg-slate-50 rounded-xl p-3 border border-slate-200/80 flex flex-col justify-between hover:bg-brand-50 hover:border-brand-300 hover:shadow-md transition cursor-pointer group";
+                card.onclick = function() {
+                    document.getElementById('filterDept').value = deptName;
+                    renderTable();
+                    // Scroll smoothly to table view
+                    document.getElementById('carTableBody').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                };
+
+                card.innerHTML = `
+                    <div class="font-medium text-xs text-slate-700 group-hover:text-brand-700 truncate mb-2 flex items-center justify-between" title="${escapeHtml(deptName)}">
+                        <span>${escapeHtml(deptName)}</span>
+                        <i class="fa-solid fa-filter text-[10px] text-slate-400 group-hover:text-brand-600"></i>
+                    </div>
+                    <div class="flex items-center justify-between text-xs pt-1 border-t border-slate-200/60">
+                        <span class="flex items-center gap-1 ${expiredCount > 0 ? 'text-red-600 font-semibold' : 'text-slate-400'}">
+                            <i class="fa-solid fa-circle text-[8px]"></i> เกินกำหนด: <strong>${expiredCount}</strong> คัน
+                        </span>
+                        <span class="flex items-center gap-1 ${warningCount > 0 ? 'text-amber-600 font-semibold' : 'text-slate-400'}">
+                            <i class="fa-solid fa-circle text-[8px]"></i> ใกล้ครบ: <strong>${warningCount}</strong> คัน
+                        </span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function openModal(carId = null) {
+            const modal = document.getElementById('carModal');
+            const form = document.getElementById('carForm');
+            
+            form.reset();
+            document.getElementById('carId').value = '';
+
+            if (carId) {
+                const car = cars.find(c => c.id === carId);
+                if (car) {
+                    document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-pen-to-square"></i> แก้ไขข้อมูลรถยนต์';
+                    document.getElementById('carId').value = car.id;
+                    document.getElementById('licensePlate').value = car.licensePlate;
+                    document.getElementById('department').value = car.department;
+                    document.getElementById('dueDate').value = car.dueDate;
+                }
+            } else {
+                document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-car"></i> เพิ่มข้อมูลรถยนต์';
+                document.getElementById('dueDate').value = getRelativeDate(30);
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('carModal').classList.add('hidden');
+        }
+
+        function saveCar(e) {
+            e.preventDefault();
+
+            const id = document.getElementById('carId').value;
+            const licensePlate = document.getElementById('licensePlate').value.trim();
+            const department = document.getElementById('department').value;
+            const dueDate = document.getElementById('dueDate').value;
+
+            if (!department) {
+                showToast('กรุณาเลือกหน่วยงานย่อย', 'error');
+                return;
+            }
+
+            if (id) {
+                const index = cars.findIndex(c => c.id === id);
+                if (index !== -1) {
+                    cars[index] = { id, licensePlate, department, dueDate };
+                    showToast('อัปเดตข้อมูลรถยนต์เรียบร้อยแล้ว');
+                }
+            } else {
+                const newCar = {
+                    id: Date.now().toString(),
+                    licensePlate,
+                    department,
+                    dueDate
+                };
+                cars.push(newCar);
+                showToast('เพิ่มข้อมูลรถยนต์เรียบร้อยแล้ว');
+            }
+
+            saveToLocalStorage();
+            renderTable();
+            closeModal();
+        }
+
+        function quickUpdateTax(carId) {
+            const car = cars.find(c => c.id === carId);
+            if (!car) return;
+
+            // Simple Confirmation & Extension (+1 year)
+            const currentDueDate = new Date(car.dueDate);
+            currentDueDate.setFullYear(currentDueDate.getFullYear() + 1);
+            car.dueDate = currentDueDate.toISOString().split('T')[0];
+
+            saveToLocalStorage();
+            renderTable();
+            showToast(`ต่อภาษีทะเบียน ${car.licensePlate} เรียบร้อยแล้ว (+1 ปี)`);
+        }
+
+        function editCar(carId) {
+            openModal(carId);
+        }
+
+        function deleteCar(carId) {
+            const car = cars.find(c => c.id === carId);
+            if (!car) return;
+
+            cars = cars.filter(c => c.id !== carId);
+            saveToLocalStorage();
+            renderTable();
+            showToast('ลบข้อมูลรถยนต์เรียบร้อยแล้ว', 'error');
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.innerText = message;
+            
+            if (type === 'error') {
+                toastIcon.className = 'fa-solid fa-circle-exclamation text-red-400 text-lg';
+            } else {
+                toastIcon.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
